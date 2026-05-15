@@ -215,16 +215,17 @@ function flagImg(code) {
 // ══════════════════════════════════════════
 // 8 matches: group winner vs 3rd-place team (slotted by group eligibility)
 // 8 matches: group winner/runner-up vs runner-up
-const THIRDS_SLOTS = {
-  74: ["A","B","C","D","F"],
-  77: ["C","D","F","G","H"],
-  81: ["B","E","F","I","J"],
-  82: ["A","E","H","I","J"],
-  79: ["C","E","F","H","I"],
-  80: ["E","H","I","J","K"],
-  85: ["E","F","G","I","J"],
-  87: ["D","E","I","J","L"],
-};
+// Array (not object) to preserve insertion order — JS sorts integer object keys numerically
+const THIRDS_SLOTS = [
+  { match:74, eligible:["A","B","C","D","F"] },
+  { match:77, eligible:["C","D","F","G","H"] },
+  { match:81, eligible:["B","E","F","I","J"] },
+  { match:82, eligible:["A","E","H","I","J"] },
+  { match:79, eligible:["C","E","F","H","I"] },
+  { match:80, eligible:["E","H","I","J","K"] },
+  { match:85, eligible:["E","F","G","I","J"] },
+  { match:87, eligible:["D","E","I","J","L"] },
+];
 
 const OFFICIAL_R32 = [
   { a:"E1",  b:"3rd_74", label:"Match 74" },
@@ -318,17 +319,16 @@ async function storageList(prefix, shared) {
 function assignThirds(rankedGroups) {
   const advancing = rankedGroups.slice(0, 8);
   const advSet = new Set(advancing);
-  const slots = Object.keys(THIRDS_SLOTS).map(Number);
-  const result = {};
+  const result = {}; // {matchNum: groupLetter}
   function bt(idx, used) {
-    if (idx === slots.length) return true;
-    const slot = slots[idx];
-    const eligible = THIRDS_SLOTS[slot].filter(g => advSet.has(g) && !used.has(g));
-    eligible.sort((a, b) => advancing.indexOf(a) - advancing.indexOf(b));
-    for (const g of eligible) {
-      used.add(g); result[slot] = g;
+    if (idx === THIRDS_SLOTS.length) return true;
+    const { match, eligible } = THIRDS_SLOTS[idx];
+    const candidates = eligible.filter(g => advSet.has(g) && !used.has(g));
+    candidates.sort((a, b) => advancing.indexOf(a) - advancing.indexOf(b));
+    for (const g of candidates) {
+      used.add(g); result[match] = g;
       if (bt(idx + 1, used)) return true;
-      used.delete(g); delete result[slot];
+      used.delete(g); delete result[match];
     }
     return bt(idx + 1, used);
   }
